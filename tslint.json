@@ -43,6 +43,7 @@
         ]
       }
     ],
+    "newline-per-chained-call": true,
     "no-arg": true,
     "no-bitwise": false,
     "no-console": [

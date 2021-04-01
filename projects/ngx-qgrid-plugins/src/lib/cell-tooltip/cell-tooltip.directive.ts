@@ -21,7 +21,6 @@ export class CellTooltipDirective implements OnChanges {
 	constructor(private elementRef: ElementRef,
 		private renderer: Renderer2
 	) {
-		renderer.addClass(elementRef.nativeElement, 'q-grid-hide');
 	}
 
 	ngOnChanges(e: SimpleChanges) {
@@ -33,12 +32,18 @@ export class CellTooltipDirective implements OnChanges {
 			const { top, left, height } = this.host.getBoundingClientRect();
 			const box = this.getBoxRect(this.host);
 			const el = this.elementRef.nativeElement;
+
 			this.job(() => {
 				this.renderer.setStyle(el, 'top', top - box.top + height + 'px');
 				this.renderer.setStyle(el, 'left', left - box.left + 'px');
 				this.renderer.removeClass(el, 'q-grid-hide');
 			});
 
+		} else {
+			const el = this.elementRef.nativeElement;
+			this.job(() => {
+				this.renderer.addClass(el, 'q-grid-hide');
+			});
 		}
 
 	}
