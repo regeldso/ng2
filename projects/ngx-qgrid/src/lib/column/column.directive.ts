@@ -1,7 +1,6 @@
 import {
-	Component,
+	Directive,
 	Input,
-	ChangeDetectionStrategy,
 	OnDestroy,
 	SkipSelf,
 	Optional,
@@ -16,17 +15,16 @@ import { GridPlugin } from '../plugin/grid-plugin';
 import { guid } from '@qgrid/core/services/guid';
 import { isUndefined } from '@qgrid/core/utility/kit';
 import { TemplateHostService } from '../template/template-host.service';
-import { ColumnModelCategory, ColumnModelType, ColumnModelPin, ColumnModelWidthMode, ColumnModel } from '@qgrid/core/column-type/column.model';
+import { ColumnModelCategory, ColumnSectionType, ColumnModelType, ColumnModelPin, ColumnModelWidthMode, ColumnModel } from '@qgrid/core/column-type/column.model';
 
-@Component({
-	selector: 'q-grid-column',
-	template: '<ng-content></ng-content>',
-	providers: [TemplateHostService, ColumnHostService, GridPlugin],
-	changeDetection: ChangeDetectionStrategy.OnPush,
+@Directive({
+	selector: '[q-grid-column]',
+	providers: [TemplateHostService, ColumnHostService, GridPlugin]
 })
-export class ColumnComponent implements OnInit, OnDestroy, OnChanges {
+export class ColumnDirective implements OnInit, OnDestroy, OnChanges {
 	@Input() type: string | ColumnModelType;
-	@Input() key: string;
+	@Input('q-grid-column') key: string;
+	@Input() section: string | ColumnSectionType = 'body';
 	@Input() category: ColumnModelCategory;
 	@Input() class: string;
 	@Input() title: string;
@@ -98,7 +96,9 @@ export class ColumnComponent implements OnInit, OnDestroy, OnChanges {
 		// We want to update model when ngOntInit is triggered and not in afterViewInit
 		// so we apply dirty hack to understand if column is cohort or not.
 		const element = this.elementRef.nativeElement as HTMLElement;
-		if (element.children.length && element.children.item(0).tagName === 'Q-GRID-COLUMN') {
+		if (element.children
+			&& element.children.length
+			&& element.children.item(0).tagName === 'Q-GRID-COLUMN') {
 			this.type = 'cohort';
 			if (!withKey) {
 				this.key = `$cohort-${this.title || guid()}`;

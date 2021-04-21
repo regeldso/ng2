@@ -64,6 +64,10 @@ export declare type ColumnModelType =
 	'time' |
 	'url';
 
+export declare type ColumnSectionType =
+	'body' |
+	'foot' |
+	'head';
 /**
  * A class that represents any column in the qgrid.
  */
