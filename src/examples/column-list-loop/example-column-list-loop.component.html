@@ -1,8 +1,5 @@
 <q-grid [caption]="title"
-		[rows]="rows | async">
-	<ng-template *ngFor="let column of columns"
-				 [q-grid-column]="column.key"
-				 [title]="column.title">
-	</ng-template>
+		[rows]="rows | async"
+		[model]="gridModel">
 	<q-grid-row [canMove]="true"></q-grid-row>
 </q-grid>
