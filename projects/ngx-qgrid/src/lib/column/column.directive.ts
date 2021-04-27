@@ -1,176 +1,35 @@
 import {
 	Directive,
 	Input,
-	OnDestroy,
-	SkipSelf,
-	Optional,
-	OnInit,
-	ElementRef,
-	OnChanges,
-	SimpleChanges
+	TemplateRef,
+	OnInit
 } from '@angular/core';
-import { ColumnHostService } from './column-host.service';
-import { ColumnListService } from '../column-list/column-list.service';
-import { GridPlugin } from '../plugin/grid-plugin';
-import { guid } from '@qgrid/core/services/guid';
-import { isUndefined } from '@qgrid/core/utility/kit';
-import { TemplateHostService } from '../template/template-host.service';
-import { ColumnModelCategory, ColumnSectionType, ColumnModelType, ColumnModelPin, ColumnModelWidthMode, ColumnModel } from '@qgrid/core/column-type/column.model';
+import { TemplateCacheService } from '../template/template-cache.service';
+import { TemplateLink } from '../template/template-link';
+import { ColumnSectionType } from '@qgrid/core/column-type/column.model';
 
 @Directive({
-	selector: '[q-grid-column]',
-	providers: [TemplateHostService, ColumnHostService, GridPlugin]
+	// tslint:disable-next-line
+	selector: 'ng-template[qGridColumn]'
 })
-export class ColumnDirective implements OnInit, OnDestroy, OnChanges {
-	@Input() type: string | ColumnModelType;
-	@Input('q-grid-column') key: string;
+
+export class ColumnDirective implements OnInit {
+	@Input('qGridColumn') key = '';
 	@Input() section: string | ColumnSectionType = 'body';
-	@Input() category: ColumnModelCategory;
-	@Input() class: string;
-	@Input() title: string;
-	@Input() description: string;
-	@Input() pin: ColumnModelPin;
-	@Input() aggregation: string;
-	@Input() aggregationOptions: any;
-	@Input() editor: string;
-	@Input() editorOptions: any;
-	@Input() format: string;
-	@Input() dateFormat: string;
-	@Input() timeFormat: string;
-	@Input() symbol: string;
-	@Input() code: string;
-
-	@Input() width: number | string;
-	@Input() widthMode: ColumnModelWidthMode;
-	@Input() minWidth: number | string;
-	@Input() maxWidth: number | string;
-	@Input() viewWidth: number | string;
-	@Input() offset: number | string;
-
-	@Input() canEdit: boolean;
-	@Input() canResize: boolean;
-	@Input() canSort: boolean;
-	@Input() canMove: boolean;
-	@Input() canFilter: boolean;
-	@Input() canHighlight: boolean;
-	@Input() canFocus: boolean;
-
-	@Input() isVisible: boolean;
-	@Input() isDefault: boolean;
-
-	@Input() index: number;
-
-	@Input() label: ((row: any, value?: any) => any) | any;
-	@Input() labelPath: string;
-
-	@Input() itemLabel: (row: any, value?: any) => any;
-	@Input() itemFormat: string;
-	@Input() itemType: string;
-
-	@Input() value: (row: any, value?: any) => any;
-	@Input() path: string;
-
-	@Input() compare: (x: any, y: any) => number;
-
-	@Input() trueValue: any;
-	@Input() falseValue: any;
-
-	@Input() maxLength: number;
-
-	@Input() startNumber: number;
+	@Input() context = {};
 
 	constructor(
-		@SkipSelf() @Optional() private parentHost: ColumnHostService,
-		private selfHost: ColumnHostService,
-		private columnList: ColumnListService,
-		private templateHost: TemplateHostService,
-		private elementRef: ElementRef,
-		private plugin: GridPlugin,
+		private templateCache: TemplateCacheService,
+		private templateRef: TemplateRef<any>
 	) {
 	}
 
 	ngOnInit() {
-		let withKey = !isUndefined(this.key);
-		let withType = !isUndefined(this.type);
-
-		// We want to update model when ngOntInit is triggered and not in afterViewInit
-		// so we apply dirty hack to understand if column is cohort or not.
-		const element = this.elementRef.nativeElement as HTMLElement;
-		if (element.children
-			&& element.children.length
-			&& element.children.item(0).tagName === 'Q-GRID-COLUMN') {
-			this.type = 'cohort';
-			if (!withKey) {
-				this.key = `$cohort-${this.title || guid()}`;
-			}
-
-			withKey = true;
-			withType = true;
-		}
-
-		if (!withKey) {
-			this.key = this.columnList.generateKey(this);
-		}
-
-		const column = this.columnList.extract(this.key, this.type);
-		this.columnList.copy(column, this);
-
-		this.templateHost.key = source => {
-			const parts = [source, 'cell'];
-
-			if (withType) {
-				parts.push(this.type);
-			}
-
-			if (withKey) {
-				parts.push(`the-${this.key}`);
-			}
-
-			return parts.join('-') + '.tpl.html';
-		};
-
-		if (withKey) {
-			if (this.parentHost) {
-				this.parentHost.column.children.push(column);
-			} else {
-				this.columnList.add(column);
-			}
-
-			this.selfHost.column = column;
-		} else {
-			const settings =
-				Object
-					.keys(this)
-					.filter(key => !isUndefined(this[key]) && column.hasOwnProperty(key))
-					.reduce((memo, key) => {
-						memo[key] = column[key];
-						return memo;
-					}, {}) as ColumnModel;
-
-			this.columnList.register(settings);
-		}
+		const link = new TemplateLink(this.templateRef, this.context);
+		this.templateCache.put(this.getKey(), link);
 	}
 
-	ngOnChanges(changes: SimpleChanges) {
-		const { column } = this.selfHost;
-		if (column && changes.isVisible) {
-			if (column.isVisible !== this.isVisible) {
-				column.isVisible = this.isVisible;
-
-				const { model } = this.plugin;
-				model.data({
-					columns: Array.from(model.data().columns)
-				}, {
-					source: 'column.component'
-				});
-			}
-		}
-	}
-
-	ngOnDestroy() {
-		const { column } = this.selfHost;
-		if (column && column.source === 'template') {
-			this.columnList.delete(column.key);
-		}
+	getKey() {
+		return `${this.section}-cell-the-${this.key}.tpl.html`;
 	}
 }
